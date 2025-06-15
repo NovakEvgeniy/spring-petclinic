@@ -1,14 +1,19 @@
-# Используем официальный образ Java 17
-FROM eclipse-temurin:17
-
-# Устанавливаем рабочую директорию
+# Используем официальный образ Maven для сборки
+FROM maven:3.9.7-eclipse-temurin-17 AS build
 WORKDIR /app
 
-# Копируем всё из текущего репозитория в контейнер
+# Копируем исходный код
 COPY . .
 
-# Собираем .jar-файл через Maven Wrapper
+# Собираем проект с помощью Maven
 RUN ./mvnw package -DskipTests
 
+# Используем минимальный JDK-образ для запуска
+FROM eclipse-temurin:17
+WORKDIR /app
+
+# Копируем скомпилированный jar из предыдущего слоя
+COPY --from=build /app/target/*.jar app.jar
+
 # Запускаем приложение
-CMD ["java", "-jar", "target/petclinic-*.jar"]
+ENTRYPOINT ["java", "-jar", "app.jar"]
